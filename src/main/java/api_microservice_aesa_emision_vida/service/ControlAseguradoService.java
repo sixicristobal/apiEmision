@@ -39,7 +39,9 @@ public class ControlAseguradoService {
     private static final String ExcesoGastosMedicos = "120000000"; // Setea el Monto del Capital Asegurado en Exceso de Gastosmedicos
     private final Map<Integer, List<ResultadoCuota>> cuotasPorTitular = new HashMap<>();
     private Integer ultimoCiTitularValido = null;
-    private AtomicInteger mesVigenciaExcel = new AtomicInteger(-1);
+    private final AtomicInteger mesVigenciaExcel = new AtomicInteger(-1);
+    private final AtomicInteger anioVigenciaExcel = new AtomicInteger(-1);
+    private boolean verificacionMesRealizada = false;
 
     @Autowired private AseguradoControlCaRepository aseguradoControlCaRepository;
     @Autowired private CategoriasCaRepository categoriasCaRepository;
@@ -78,9 +80,7 @@ public class ControlAseguradoService {
 
     public void procesarExcel(MultipartFile archivo, String bancoActual) throws Exception {
         Objects.requireNonNull(archivo, "El archivo no puede ser nulo");
-        errores.clear();
- //     inicializarEstado(); // Limpia estado
-//        this.mesVigenciaExcel.set(-1);
+        inicializarEstado();
 
         grupoGeneralBancoService.cargarParametrosPorBanco(bancoActual);
 
@@ -378,10 +378,13 @@ public class ControlAseguradoService {
 //                return;
 //            }
 
-            // Evitar procesar si ya existe el asegurado para el mismo mes
-            if (aseguradoControlCaRepository.existsByCiAndMesVigencia(ci, mesVigenciaExcel.get())) {
-                errores.add("Fila " + nroFila + ": asegurado con CI " + ci + " ya procesado para el mes " + mesVigenciaExcel.get());
-                return;
+            registrarMesYAnioVigencia(mesVigencia, anioVigencia, nroFila);
+
+            if (!verificacionMesRealizada && mesVigenciaExcel.get() != -1 && anioVigenciaExcel.get() != -1) {
+                if (aseguradoControlCaRepository.existsByMesVigenciaAndAnioVigencia(mesVigenciaExcel.get(), anioVigenciaExcel.get())) {
+                    throw new IllegalStateException("Ya existe una carga para el mes " + mesVigenciaExcel.get() + "/" + anioVigenciaExcel.get());
+                }
+                verificacionMesRealizada = true;
             }
 
             if (!validarGrupoExiste(grupoNombre, nroFila)) return;
@@ -421,12 +424,6 @@ public class ControlAseguradoService {
                 }
             }
 
-            boolean yaExiste = aseguradoControlCaRepository.existsByMesVigencia(mesVigenciaExcel.get());
-            if (yaExiste) {
-                throw new RuntimeException("  Ya existe una carga para el mes...");
-            }
-
-
             guardarAsegurado(dto);
 
         } catch (Exception e) {
@@ -441,8 +438,25 @@ public class ControlAseguradoService {
         edadesPadres.clear();
         cuotasPorTitular.clear();
         titularesPorCi.clear();
+        mesVigenciaExcel.set(-1);
+        anioVigenciaExcel.set(-1);
+        verificacionMesRealizada = false;
+    }
 
+    private void registrarMesYAnioVigencia(int mesVigencia, int anioVigencia, int fila) {
+        if (mesVigenciaExcel.compareAndSet(-1, mesVigencia)) {
+            anioVigenciaExcel.set(anioVigencia);
+            return;
+        }
 
+        anioVigenciaExcel.compareAndSet(-1, anioVigencia);
+
+        if (mesVigenciaExcel.get() != mesVigencia || anioVigenciaExcel.get() != anioVigencia) {
+            String mensaje = "Fila " + fila + ": mes/año de vigencia " + mesVigencia + "/" + anioVigencia +
+                    " no coincide con el declarado previamente " + mesVigenciaExcel.get() + "/" + anioVigenciaExcel.get();
+            errores.add(mensaje);
+            throw new IllegalStateException(mensaje);
+        }
     }
 
     private void aplicarSolteroSolos(CategoriasCAEntity categoriaEntity, GrupoGeneralesCaEntity grupoEntity, ResultadoCuota resultado) {

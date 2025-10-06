@@ -35,6 +35,8 @@ public interface AseguradoControlCaRepository extends JpaRepository<AseguradoCon
 
         boolean existsByMesVigencia(int mesVigencia);
 
+        boolean existsByMesVigenciaAndAnioVigencia(int mesVigencia, int anioVigencia);
+
         boolean existsByCiAndMesVigencia(int ci, int mesVigencia);
 
 
