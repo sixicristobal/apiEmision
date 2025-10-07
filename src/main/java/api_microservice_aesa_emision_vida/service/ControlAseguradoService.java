@@ -22,12 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import api_microservice_aesa_emision_vida.entity.GrupoGeneralesParametroEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 @Service
 public class ControlAseguradoService {
@@ -162,7 +160,9 @@ public class ControlAseguradoService {
                 }
 
                 try {
-//                    generarTxtExport();
+                    if (mesVigenciaExcel.get() > 0 && anioVigenciaExcel.get() > 0) {
+                        generarTxtExport(mesVigenciaExcel.get(), anioVigenciaExcel.get());
+                    }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     errores.add("Error al generar TXT: " + ex.getMessage());
@@ -407,7 +407,8 @@ public class ControlAseguradoService {
             dto.setFechaNacimiento(fechaNac);
             dto.setMail(emails);
             dto.setCiTitular(ciTitular);
-           dto.setMesVigencia(mesVigencia);
+            dto.setMesVigencia(mesVigencia);
+            dto.setAnioVigencia(anioVigencia);
             dto.setFechaCreacion(LocalDate.now());
 
             double capital = grupoGeneralBancoService.obtenerCapitalAsegurado(bancoActual, grupoId);
@@ -825,6 +826,7 @@ public class ControlAseguradoService {
         asegurado.setEstado(true); // Por defecto verdadero
         asegurado.setOperador(Optional.ofNullable(dto.getOperador()).orElse("cristobal.acuna@aesaseguros.com.py"));
         asegurado.setMail(dto.getMail());
+        asegurado.setAnioVigencia(dto.getAnioVigencia());
 
 
 
@@ -834,8 +836,7 @@ public class ControlAseguradoService {
     }
 
     private void configurarFechasVigencia(DatosPersonasDto dto, AseguradoControlCaEntity asegurado) {
-        // Usa el año actual para la vigencia de inicio y fin, y el mes del DTO
-        int anho = LocalDate.now().getYear();
+        int anho = dto.getAnioVigencia() > 0 ? dto.getAnioVigencia() : LocalDate.now().getYear();
         LocalDate inicio = LocalDate.of(anho, dto.getMesVigencia(), 1);
         LocalDate fin = inicio.withDayOfMonth(inicio.lengthOfMonth()); // Último día del mes
 
@@ -898,14 +899,11 @@ public class ControlAseguradoService {
         return "TITULAR".equalsIgnoreCase(dto.getCategoriaNombre());
     }
 
-    public void generarTxtExport(int mesExcel) throws IOException {
-
-
+    public void generarTxtExport(int mesExcel, int anioExcel) throws IOException {
         // Solo busca titulares porque el archivo de texto se genera solo para titulares.
         // El indicador `esTitular` debe establecerse con precisión durante el procesamiento.
-      // List<AseguradoControlCaEntity> asegurados = aseguradoControlCaRepository.findByEsTitular(true);
-
-      List<AseguradoControlCaEntity> asegurados = aseguradoControlCaRepository.findByEsTitularTrueAndMesVigencia(mesExcel);
+        List<AseguradoControlCaEntity> asegurados = aseguradoControlCaRepository
+                .findByEsTitularTrueAndMesVigenciaAndAnioVigencia(mesExcel, anioExcel);
 
         DateTimeFormatter nombreFormatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
         String nombreArchivo = "asegurados_" + LocalDateTime.now().format(nombreFormatter) + ".txt";
@@ -1040,10 +1038,11 @@ public class ControlAseguradoService {
     }
 
 //    public void generarTxtExport() throws IOException {
-//        if (this.mesVigenciaExcel != null && this.mesVigenciaExcel.get() >= 1) {
-//            generarTxtExport(this.mesVigenciaExcel.get());
+//        if (this.mesVigenciaExcel != null && this.mesVigenciaExcel.get() >= 1
+//                && this.anioVigenciaExcel != null && this.anioVigenciaExcel.get() >= 1) {
+//            generarTxtExport(this.mesVigenciaExcel.get(), this.anioVigenciaExcel.get());
 //        } else {
-//            throw new IllegalStateException("❌ mesVigenciaExcel no está inicializado o es inválido.");
+//            throw new IllegalStateException("❌ mes/anio de vigencia no están inicializados o son inválidos.");
 //        }
 //    }
 
