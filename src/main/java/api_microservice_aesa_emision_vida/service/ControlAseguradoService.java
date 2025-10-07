@@ -439,7 +439,6 @@ public class ControlAseguradoService {
         edadesPadres.clear();
         cuotasPorTitular.clear();
         titularesPorCi.clear();
-        ultimoCiTitularValido = null;
         mesVigenciaExcel.set(-1);
         anioVigenciaExcel.set(-1);
         verificacionMesRealizada = false;
