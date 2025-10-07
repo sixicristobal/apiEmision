@@ -9,6 +9,7 @@ public class DatosPersonasDto {
     private boolean esTitular;
     private LocalDate fechaInicioInclusion;
     private int mesVigencia;
+    private int anioVigencia;
     private int edadActual;
     private double cuotaTotal;
     private Double absorbeBanco;
@@ -85,6 +86,14 @@ public class DatosPersonasDto {
 
     public void setMesVigencia(int mesVigencia) {
         this.mesVigencia = mesVigencia;
+    }
+
+    public int getAnioVigencia() {
+        return anioVigencia;
+    }
+
+    public void setAnioVigencia(int anioVigencia) {
+        this.anioVigencia = anioVigencia;
     }
 
     public int getEdadActual() {
