@@ -28,18 +28,12 @@ public interface AseguradoControlCaRepository extends JpaRepository<AseguradoCon
             WHERE ac.fechanacimiento IS NULL
             """)
     void actualizarFechaNacimientoDesdePersonas();
-
-
 //    @Query("Select count(a) > 0 from AseguradoControlCaEntity a where a.mesVigencia = :mes")
 //    boolean existsByMesVigencia(@Param("mes") int mes);
 
-
-        boolean existsByMesVigencia(int mesVigencia);
-
-        boolean existsByMesVigenciaAndAnioVigencia(int mesVigencia, int anioVigencia);
-
-        boolean existsByCiAndMesVigencia(int ci, int mesVigencia);
-
+    boolean existsByMesVigencia(int mesVigencia);
 
     boolean existsByMesVigenciaAndAnioVigencia(int mesVigencia, int anioVigencia);
+
+    boolean existsByCiAndMesVigencia(int ci, int mesVigencia);
 }
